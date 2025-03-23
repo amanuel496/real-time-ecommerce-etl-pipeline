@@ -1,0 +1,4 @@
+aws_region: us-east-2
+kinesis_stream: ecommerce-stream
+s3_bucket: ecommerce-raw-data-aman
+s3_prefix: raw-data
