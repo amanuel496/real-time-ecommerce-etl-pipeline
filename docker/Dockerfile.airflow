@@ -1,0 +1,19 @@
+# Dockerfile
+FROM apache/airflow:2.7.2
+
+USER root
+
+# Install Java (needed by Spark)
+RUN apt-get update && apt-get install -y openjdk-11-jdk curl
+
+# Install Spark
+ENV SPARK_VERSION=3.5.5
+ENV HADOOP_VERSION=3
+
+RUN curl -L https://dlcdn.apache.org/spark/spark-${SPARK_VERSION}/spark-${SPARK_VERSION}-bin-hadoop${HADOOP_VERSION}.tgz | tar -xz -C /opt/ && \
+    ln -s /opt/spark-${SPARK_VERSION}-bin-hadoop${HADOOP_VERSION} /opt/spark
+
+ENV SPARK_HOME=/opt/spark
+ENV PATH="$SPARK_HOME/bin:$PATH"
+
+USER airflow

@@ -1,3 +1,5 @@
+version: '3.8'
+
 services:
   postgres:
     image: postgres:13
@@ -5,37 +7,53 @@ services:
       POSTGRES_USER: airflow
       POSTGRES_PASSWORD: airflow
       POSTGRES_DB: airflow
+    ports:
+      - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
   airflow-webserver:
-    image: apache/airflow:2.7.2
+    build: &airflow-build
+      context: .
+      dockerfile: ./docker/Dockerfile.airflow
     depends_on:
       - postgres
-    environment:
-      AIRFLOW__CORE__EXECUTOR: LocalExecutor
-      AIRFLOW__CORE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres/airflow
-      AIRFLOW__CORE__FERNET_KEY: ''
-      AIRFLOW__CORE__LOAD_EXAMPLES: 'false'
-      AIRFLOW__WEBSERVER__SECRET_KEY: mysecret
+    env_file: .env
     volumes:
       - ./airflow/dags:/opt/airflow/dags
+      - ./data_generation:/opt/airflow/data_generation
       - ./scripts:/opt/airflow/scripts
+      - ./config:/opt/airflow/config
+      - ./jars:/opt/airflow/jars
     ports:
       - "8080:8080"
     command: webserver
 
   airflow-scheduler:
-    image: apache/airflow:2.7.2
+    build: *airflow-build
     depends_on:
       - airflow-webserver
-    environment:
-      AIRFLOW__CORE__EXECUTOR: LocalExecutor
-      AIRFLOW__CORE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres/airflow
+    env_file: .env
     volumes:
       - ./airflow/dags:/opt/airflow/dags
+      - ./data_generation:/opt/airflow/data_generation
       - ./scripts:/opt/airflow/scripts
+      - ./config:/opt/airflow/config
+      - ./jars:/opt/airflow/jars
     command: scheduler
+
+  airflow-cli:
+    image: apache/airflow:2.8.1
+    depends_on:
+      - postgres
+    entrypoint: /bin/bash
+    tty: true
+    volumes:
+      - ./airflow/dags:/opt/airflow/dags
+      - ./data_generation:/opt/airflow/data_generation
+      - ./scripts:/opt/airflow/scripts
+      - ./config:/opt/airflow/config
+      - ./jars:/opt/airflow/jars
 
 volumes:
   postgres_data:

@@ -1,0 +1,6 @@
+# Global Python dependencies
+faker
+boto3
+pyyaml
+pandas
+pyarrow
