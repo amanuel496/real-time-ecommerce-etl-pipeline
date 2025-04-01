@@ -1,0 +1,15 @@
+# Global
+.env
+venv
+sample_data/
+config
+jars/
+note
+
+# Terraform files
+.terraform/
+terraform.tfstate
+terraform.tfstate.backup
+.terraform.lock.hcl
+terraform.tfvars
+variables.tf
