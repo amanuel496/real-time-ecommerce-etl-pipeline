@@ -12,33 +12,38 @@ import time
 import random
 
 # Load AWS config
-with open(Path(__file__).parent.parent / 'config/aws_config.yaml', 'r') as file:
+with open(Path(__file__).parent / 'aws_config.yaml', 'r') as file:
     aws_config = yaml.safe_load(file)
 
 AWS_REGION = aws_config['aws_region']
+AWS_ACCESS_KEY = aws_config['aws_access_key_id']
+AWS_SECRET_KEY = aws_config['aws_secret_access_key']
 KINESIS_STREAM = aws_config['kinesis_stream']
-S3_BUCKET = aws_config['s3_bucket']
-S3_PREFIX = aws_config['s3_prefix']
+S3_BUCKET = aws_config['s3']['bucket']
+S3_PREFIX = aws_config['s3']['prefix']
 BATCH_SIZE = 100
 
-kinesis = boto3.client('kinesis', region_name=AWS_REGION)
-s3 = boto3.client('s3', region_name=AWS_REGION)
+kinesis = boto3.client(
+    'kinesis',
+    region_name=AWS_REGION,
+    aws_access_key_id=AWS_ACCESS_KEY,
+    aws_secret_access_key=AWS_SECRET_KEY
+)
+s3 = boto3.client(
+    's3',
+    region_name=AWS_REGION,
+    aws_access_key_id=AWS_ACCESS_KEY,
+    aws_secret_access_key=AWS_SECRET_KEY
+)
 
-# Files to stream (reflecting the full schema)
 DATA_DIR = Path(__file__).parent / 'sample_data'
 data_files = [
-    'customers.csv',
     'orders.csv',
     'order_details.csv',
     'order_status_history.csv',
     'order_promotions.csv',
-    'promotions.csv',
     'payments.csv',
-    'shipments.csv',
-    'products.csv',
-    'inventory.csv',
-    'product_suppliers.csv',
-    'suppliers.csv'
+    'inventory.csv'
 ]
 
 def stream_and_backup(entity, file_path):
@@ -50,15 +55,51 @@ def stream_and_backup(entity, file_path):
         headers = f.readline().strip().split(',')
         for line in f:
             fields = line.strip().split(',')
-            record = dict(zip(headers, fields))
-            record['record_type'] = entity  
+            record = {key: value.strip() for key, value in zip(headers, fields)}
+            record['record_type'] = entity
 
+            try:
+                if entity == 'orders':
+                    record['TotalAmount'] = float(record.get('TotalAmount', 0.0))
+                    if not record.get('OrderID') or not record.get('CustomerID'):
+                        raise ValueError("Missing required OrderID or CustomerID.")
 
-            # Stream to Kinesis
+                elif entity == 'order_details':
+                    record['Quantity'] = int(record.get('Quantity', 0))
+                    record['Subtotal'] = float(record.get('Subtotal', 0.0))
+                    if not record.get('OrderDetailID') or not record.get('OrderID'):
+                        raise ValueError("Missing OrderDetailID or OrderID.")
+
+                elif entity == 'order_status_history':
+                    if not record.get('OrderStatusID') or not record.get('OrderID') or not record.get('StatusDate'):
+                        raise ValueError("Missing OrderStatusID, OrderID, or StatusDate.")
+                    datetime.strptime(record['StatusDate'], "%Y-%m-%d")
+
+                elif entity == 'order_promotions':
+                    record['DiscountApplied'] = float(record.get('DiscountApplied', 0.0))
+                    if not record.get('OrderPromotionID') or not record.get('PromotionID'):
+                        raise ValueError("Missing IDs in promotion record.")
+
+                elif entity == 'payments':
+                    record['Amount'] = float(record.get('Amount', 0.0))
+                    if not record.get('PaymentID') or not record.get('OrderID'):
+                        raise ValueError("Missing PaymentID or OrderID.")
+
+                elif entity == "inventory":
+                    try:
+                        record["StockLevel"] = int(record["StockLevel"])
+                        record["LastUpdated"] = record["LastUpdated"].split('.')[0]  # Remove microseconds
+                    except (ValueError, KeyError) as e:
+                        raise ValueError(f"Invalid inventory data: {e}")
+
+            except Exception as e:
+                print(f"\u26a0\ufe0f Skipping bad {entity} record: {record}, error: {e}")
+                continue
+
             kinesis.put_record(
                 StreamName=KINESIS_STREAM,
                 Data=json.dumps(record),
-                PartitionKey=str(random.randint(1, 10))  # TODO: improve partitioning
+                PartitionKey=str(random.randint(1, 10))
             )
 
             print(f'Streamed record to Kinesis: {record}')
@@ -78,7 +119,6 @@ def write_batch_to_s3(entity, batch):
     print(f'The df created from incoming batch: {batch} \n is {df}')
 
     table = pa.Table.from_pandas(df)
-
     buffer = BytesIO()
     pq.write_table(table, buffer, compression='snappy')
 
