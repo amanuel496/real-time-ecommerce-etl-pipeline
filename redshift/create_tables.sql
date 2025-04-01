@@ -36,7 +36,8 @@ CREATE TABLE IF NOT EXISTS dim_products (
     ProductID VARCHAR(50) PRIMARY KEY,
     Name VARCHAR(255),
     Category VARCHAR(100),
-    Price DECIMAL(10,2)
+    Price DECIMAL(10,2),
+    SupplierID VARCHAR(50),
 );
 
 -- Dim Table: Suppliers
