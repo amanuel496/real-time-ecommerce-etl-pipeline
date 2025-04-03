@@ -1,19 +1,23 @@
 # Real-Time E-Commerce ETL Pipeline
 
-A real-time ETL and analytics pipeline built for e-commerce platforms. This project simulates ingestion of transactional and product data, performs transformations using Apache Spark, and loads the results into Amazon Redshift for analysis via QuickSight or Tableau.
+A real-time, cloud-native ETL pipeline that ingests, processes, and visualizes e-commerce data from end to end — fully automated, fully scalable.
 
-## 🔧 Tech Stack
+![Made with Python](https://img.shields.io/badge/Made%20with-Python-blue.svg)
+![CI/CD](https://img.shields.io/github/workflow/status/amanuel496/real-time-ecommerce-etl-pipeline/CI)
+![License](https://img.shields.io/github/license/amanuel496/real-time-ecommerce-etl-pipeline)
+
+## Tech Stack
 
 - **AWS Kinesis** – Real-time data ingestion
 - **Amazon S3** – Raw and backup data storage
 - **Apache Spark (PySpark)** – Data transformation
 - **Amazon Redshift** – Data warehouse for analytics
 - **Apache Airflow** – Workflow orchestration
-- **Amazon QuickSight / Tableau** – BI and dashboards
+- **Amazon QuickSight** – BI and dashboards
 - **Terraform** – Infrastructure as code
 - **GitHub Actions** – CI/CD for automated deployment
 
-## 🚀 Features
+## Features
 
 - Simulates realistic e-commerce transactions with sample data
 - Real-time ingestion and batch processing capabilities
@@ -22,26 +26,28 @@ A real-time ETL and analytics pipeline built for e-commerce platforms. This proj
 - Enables reporting on customer behavior, sales trends, inventory, and promotions
 - Includes monitoring and alerting with AWS CloudWatch
 
-## 📁 Folder Structure
+## Folder Structure
 
 ```bash
 .
 ├── airflow/                    # Airflow setup
-├── spark/                      # PySpark jobs and configs
-├── data_generation/            # Sample data generators
-├── redshift/                   # Redshift setup scripts
 ├── config/                     # Global/shared config
-├── tests/                      # Pytest unit/integration tests
-├── dashboards/                 # (Optional) Dashboard exports or screenshots
+├── dashboards/                 # Dashboard screenshots
+├── data_generation/            # Sample data generators
+├── design/                     # ERD, Star Schema, Pipeline Architecture
 ├── docker/                     # Docker configs per service
+├── jars/                       # Spark-Kinesis connector and Redshift-JDBC jars
+├── redshift/                   # Redshift setup scripts
+├── scripts/                    # Scripts for loading static data into S3 and Redshift, stream real-time data to Kinesis, and PySpark jobs and configs
+├── tests/                      # Pytest unit/integration tests
+├── tools/                      # Kinesis stream viewer 
 ├── .env                        # Environment variables
 ├── docker-compose.yml          # Main Docker setup
 ├── requirements.txt            # Global project dependencies
 └── README.md                   # Project overview and instructions
-
 ```
 
-## 🧪 Sample Data
+## Sample Data
 
 Run the provided script to generate fake but realistic data for:
 - Customers, Orders, Products, Payments, Shipments, Promotions, Inventory, and more
@@ -50,12 +56,12 @@ Run the provided script to generate fake but realistic data for:
 python generate_sample_data.py
 ```
 
-## ⚙️ Setup & Deployment
+## Setup & Deployment
 
 1. Clone the repo:
 
 ```bash
-git clone https://github.com/your-username/real-time-ecommerce-etl-pipeline.git
+git clone https://github.com/amanuel496/real-time-ecommerce-etl-pipeline.git
 cd real-time-ecommerce-etl-pipeline
 ```
 
@@ -75,20 +81,33 @@ terraform init
 terraform apply
 ```
 
-4. Run your ETL job locally or deploy to EMR / Airflow.
+4. Run the ETL pipeline locally, orchestrate with Airflow (Docker), or deploy to EMR.
 
-## 📊 Dashboard Preview
+## Dashboard Preview
 
-<screenshot or link to dashboard or analytics UI here>
+This project includes an interactive real-time dashboard built using **Amazon QuickSight**, powered by data flowing through the ETL pipeline.
 
-## 🛠 Future Enhancements
+### Key Visuals:
+- Total Revenue
+- Total Orders
+- Average Order Value
+- Orders Over Time
+- Top 10 Products by Orders
+- Revenue by Product Category (Donut Chart)
+
+<img src="dashboards/final_dashboard.png" width="100%">
+
+The dashboard is refreshed from real-time data flowing into **Amazon Redshift Serverless** using Spark Structured Streaming and orchestrated with Airflow.
+
+## Future Enhancements
 
 - Integrate ML model for product recommendations
 - Add user notification system using AWS SES
-- Extend to multi-cloud (GCP or Azure)
-- Add Kafka support for ingestion
 
-## 📄 License
+## License
 
 MIT License. See `LICENSE` for more information.
 
+---
+
+Built by [@amanuel496](https://github.com/amanuel496)
