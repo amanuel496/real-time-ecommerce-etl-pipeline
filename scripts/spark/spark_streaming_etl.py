@@ -7,7 +7,7 @@ from datetime import datetime
 
 # Load configuration
 def load_config():
-    config_path = Path(__file__).parent.parent / 'config/aws_config.yaml'
+    config_path = Path(__file__).parent.parent.parent / 'config/aws_config.yaml'
     with open(config_path, 'r') as f:
         return yaml.safe_load(f)
 
@@ -81,7 +81,7 @@ spark.sparkContext.setLogLevel("WARN")
 raw_stream_df = spark.readStream \
     .format("aws-kinesis") \
     .option("kinesis.streamName", config['kinesis_stream']) \
-    .option("kinesis.startingPosition", "LATEST") \
+    .option("kinesis.startingPosition", "TRIM_HORIZON") \
     .option("kinesis.awsAccessKeyId", config['aws_access_key_id']) \
     .option("kinesis.awsSecretKey", config['aws_secret_access_key']) \
     .option("kinesis.endpointUrl", config['kinesis_endpoint_url']) \
@@ -130,7 +130,7 @@ for entity in ["orders", "order_details", "order_promotions", "payments", "inven
         .start()
 
 # Wait for all memory streams to initialize
-spark.streams.awaitAnyTermination(timeout=120) 
+spark.streams.awaitAnyTermination(timeout=840)
 
 # Manual batch write logic for fact tables (after stream runs for a bit)
 def batch_write_fact_tables():

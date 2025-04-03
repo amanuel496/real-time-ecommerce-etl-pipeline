@@ -12,7 +12,7 @@ import time
 import random
 
 # Load AWS config
-with open(Path(__file__).parent / 'aws_config.yaml', 'r') as file:
+with open(Path(__file__).parent.parent / 'config/aws_config.yaml', 'r') as file:
     aws_config = yaml.safe_load(file)
 
 AWS_REGION = aws_config['aws_region']
@@ -36,7 +36,7 @@ s3 = boto3.client(
     aws_secret_access_key=AWS_SECRET_KEY
 )
 
-DATA_DIR = Path(__file__).parent / 'sample_data'
+DATA_DIR = Path(__file__).parent.parent / 'data_generation/sample_data'
 data_files = [
     'orders.csv',
     'order_details.csv',

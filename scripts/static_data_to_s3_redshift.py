@@ -37,7 +37,7 @@ s3 = boto3.client(
 )
 logger.info("Loaded AWS credentials from config and initialized S3 client.")
 
-DATA_DIR = Path(__file__).parent / 'sample_data'
+DATA_DIR = Path(__file__).parent.parent / 'data_generation/sample_data'
 
 all_entities = [
     'customers', 'products', 'suppliers', 'product_suppliers', 'promotions', 'shipments'
@@ -124,6 +124,9 @@ def upload_to_s3(df, entity):
             pa.field("CampaignType", pa.string())
         ])
 
+    logger.info(f"{entity} DataFrame index: {df.index.name}")
+    df = df.reset_index(drop=True)
+    
     table = pa.Table.from_pandas(df, schema=schema_override)
 
     logger.info(f"{entity} Parquet schema:")
@@ -187,9 +190,21 @@ def process_and_load_static_data():
         df = pd.read_csv(file_path)
         df = cast_dataframe(df, entity)
         dfs[entity] = df
-        upload_to_s3(df, entity)
+    
+    # shipments
+    if "shipments" in dfs:
+        df_shipments = dfs["shipments"]
+        df_shipments["DeliveryDate"] = pd.to_datetime(df_shipments["DeliveryDate"]).dt.date
+        df_shipments = df_shipments[["ShipmentID", "OrderID", "Carrier", "TrackingNumber", "Status", "DeliveryDate"]]
+        upload_to_s3(df_shipments, "shipments")
 
-    # dim_products
+    # product_suppliers
+    if "product_suppliers" in dfs:
+        df_product_suppliers = dfs["product_suppliers"]
+        df_product_suppliers = df_product_suppliers[["ProductSupplierID", "ProductID", "SupplierID"]]
+        upload_to_s3(df_product_suppliers, "product_suppliers")
+
+    # products
     if {"products", "product_suppliers"}.issubset(dfs):
         df_products = dfs["products"]
         df_ps = dfs["product_suppliers"]
@@ -224,7 +239,7 @@ def process_and_load_static_data():
         if s3_key:
             copy_to_redshift("dim_products", s3_key)
 
-    # dim_suppliers
+    # suppliers
     if {"suppliers", "product_suppliers"}.issubset(dfs):
         df_suppliers = dfs["suppliers"]
         supplier_ids = dfs["product_suppliers"]["SupplierID"].unique()
@@ -234,14 +249,14 @@ def process_and_load_static_data():
         if s3_key:
             copy_to_redshift("dim_suppliers", s3_key)
 
-    # dim_customers
+    # customers
     if "customers" in dfs:
         dim_customers = dfs["customers"][["CustomerID", "Name", "Email", "Address", "SignupDate"]]
         s3_key = upload_to_s3(dim_customers, "dim_customers")
         if s3_key:
             copy_to_redshift("dim_customers", s3_key)
 
-    # dim_promotions
+    # promotions
     if "promotions" in dfs:
         df_promotions = dfs["promotions"].copy()
         df_promotions["Discount"] = df_promotions["Discount"].apply(
