@@ -83,6 +83,9 @@ terraform apply
 
 4. Run the ETL pipeline locally, orchestrate with Airflow (Docker), or deploy to EMR.
 
+## Architecture Overview
+![ETL Diagram](design/ecommerce_etl_architecture.drawio.png)
+
 ## Dashboard Preview
 
 This project includes an interactive real-time dashboard built using **Amazon QuickSight**, powered by data flowing through the ETL pipeline.
