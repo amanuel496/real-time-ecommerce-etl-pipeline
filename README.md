@@ -17,6 +17,20 @@ A real-time, cloud-native ETL pipeline that ingests, processes, and visualizes e
 - **Terraform** – Infrastructure as code
 - **GitHub Actions** – CI/CD for automated deployment
 
+## Assumptions & Design Considerations
+
+This pipeline is built using **Spark Structured Streaming**, which supports low-latency micro-batch processing for real-time use cases.
+
+### Assumptions:
+
+- **Event Volume**: ~500 events per minute, each under 1 MB in size
+- **Ingestion**: Kinesis is used for real-time, ordered stream ingestion with horizontal scalability
+- **Processing**: Spark Structured Streaming batches incoming data for transformation and writes to Redshift in small intervals (~every 5 minutes)
+- **Storage**: Parquet files backed up in S3 for durability and replay
+- **Use Case**: Designed for near-real-time analytics dashboards and lightweight reporting workloads
+
+This architecture is suitable for small-to-medium scale e-commerce platforms. For higher-volume scenarios, optimizations like partition tuning in Kinesis Data Streams, using Spark on EMR for distributed processing, or introducing S3 as an intermediate buffer could be considered to improve throughput and cost-efficiency.
+
 ## Features
 
 - Simulates realistic e-commerce transactions with sample data
